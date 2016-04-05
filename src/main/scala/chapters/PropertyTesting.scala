@@ -16,7 +16,12 @@ object PropertyTesting {
       Gen(sample.flatMap(a => f(a).sample))
 
     def listOfN(size: Gen[Int]): Gen[List[A]] =
-      size.flatMap(s => Gen.listOfN(s, this))
+      size.flatMap(s => listOfN(s))
+
+    def listOfN(n: Int): Gen[List[A]] =
+      // Create a sequence of state transitions using the provided generator
+      // The resulting transition returns a list of all transitions
+      Gen(State.sequence(List.fill(n)(sample)))
 
     // Exercise 8.10
     def unsized: SGen[A] = SGen(_ => this)
@@ -30,10 +35,6 @@ object PropertyTesting {
     // Exercise 8.5
     def unit[A](a: => A): Gen[A] = Gen(State.unit(a))
     def boolean: Gen[Boolean] = Gen(nonNegativeInt.map(_ % 2 == 0))
-    def listOfN[A](n: Int, g: Gen[A]): Gen[List[A]] =
-    // Create a sequence of state transitions using the provided generator
-    // The resulting transition returns a list of all transitions
-      Gen(State.sequence(List.fill(n)(g.sample)))
 
     // Exercise 8.7
     def union[A](g1: Gen[A], g2: Gen[A]): Gen[A] =
@@ -49,9 +50,11 @@ object PropertyTesting {
 
     // Exercise 8.12
     def listOf[A](g: Gen[A]): SGen[List[A]] =
-      SGen(n => listOfN(n, g))
+      SGen(n => g.listOfN(n))
 
-    def listOf1[A](g: Gen[A]):
+    // Exercise 8.13
+    def listOf1[A](g: Gen[A]): SGen[List[A]] =
+      SGen(n => g.listOfN(1 max n))
   }
 
   // Exercise 8.11
