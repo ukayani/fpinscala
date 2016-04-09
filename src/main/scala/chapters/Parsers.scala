@@ -230,16 +230,5 @@ object JSONParser {
     case class JArray(get: IndexedSeq[JSON]) extends JSON
     case class JObject(get: Map[String, JSON]) extends JSON
   }
-
-  def jsonParser[Err, Parser[+_]](P: Parsers[Parser]): Parser[JSON] = {
-    import P._
-
-    val spaces = char(' ').many.slice
-
-    val digit: Parser[String] = "[0-9]".r
-    val digit1: Parser[String] = "[1-9]".r
-
-    val number = (("-" | "") ** ("0" | (digit1 ** digit.many.slice).slice) ** (("." ** digit.many.slice).slice | "")).slice
-
-  }
+  
 }
