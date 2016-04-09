@@ -99,6 +99,9 @@ object Parallel {
     // If we nest  N + 1 calls of fork, we will result in a deadlock
 
 
+    def equal[A](p: Par[A], p2: Par[A]): Par[Boolean] =
+      Par.map2(p,p2)(_ == _)
+
     def delay[A](fa: => Par[A]): Par[A] =
       es => fa(es)
 

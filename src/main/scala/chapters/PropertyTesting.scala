@@ -1,5 +1,8 @@
 package chapters
 
+import java.util.concurrent.Executors
+
+import chapters.Parallel.Par
 import chapters.Randomness._
 
 /**
@@ -8,6 +11,9 @@ import chapters.Randomness._
 object PropertyTesting {
 
   case class Gen[+A](sample: State[RNG, A]) {
+
+    def map2[B, C](g: Gen[B])(f: (A, B) => C): Gen[C] =
+      Gen(sample.map2(g.sample)(f))
 
     def map[B](f: A => B): Gen[B] =
       Gen(sample.map(f))
@@ -25,6 +31,9 @@ object PropertyTesting {
 
     // Exercise 8.10
     def unsized: SGen[A] = SGen(_ => this)
+
+    def **[B](g: Gen[B]): Gen[(A,B)] =
+      (this map2 g)((_,_))
   }
 
   object Gen {
@@ -55,6 +64,10 @@ object PropertyTesting {
     // Exercise 8.13
     def listOf1[A](g: Gen[A]): SGen[List[A]] =
       SGen(n => g.listOfN(1 max n))
+
+    object ** {
+      def unapply[A,B](p: (A,B)) = Some(p)
+    }
   }
 
   // Exercise 8.11
@@ -79,6 +92,7 @@ object PropertyTesting {
   //  }
   import Prop._
   case class Prop(run: (MaxSize, TestCases, RNG) => Result) {
+
     // Exercise 8.9
     def &&(p: Prop): Prop = Prop {
       (max, n, rng) => {
@@ -100,6 +114,7 @@ object PropertyTesting {
   }
 
   object Prop {
+    import Gen._
     type FailedCase = String
     type SuccessCount = Int
     type TestCases = Int
@@ -109,6 +124,9 @@ object PropertyTesting {
       def isFalsified: Boolean
     }
     case object Passed extends Result {
+      def isFalsified = false
+    }
+    case object Proved extends Result {
       def isFalsified = false
     }
     case class Falsified(failure: FailedCase, successes: SuccessCount) extends Result {
@@ -143,6 +161,50 @@ object PropertyTesting {
       }.find(_.isFalsified).getOrElse(Passed)
     }
 
+    def check(p: => Boolean): Prop = Prop { (_, _, _) =>
+      if (p) Proved else Falsified("()", 0)
+    }
+
+    val S = weighted(
+      choose(1,4).map(Executors.newFixedThreadPool) -> .75,
+      unit(Executors.newCachedThreadPool) -> .25) // `a -> b` is syntax sugar for `(a,b)`
+
+    def forAllPar[A](g: Gen[A])(f: A => Par[Boolean]): Prop =
+      forAll(S ** g) { case s ** a => f(a)(s).get }
+
+    // Exercise 8.16
+    // First build a list of varying size (1, 20) that contains numbers from -10, 10
+    // Using this list, build out parallel summation computations that produce a single value Par[Int]
+    val pIntComplex = choose(-10, -10).listOfN(choose(1,20)).map { l =>
+      l.foldLeft(Par.unit(0)) {
+        (p, i) => Par.fork { Par.map2(p, Par.unit(i))(_ + _) }
+      }
+    }
+
+    // Exercise 8.17
+    // Express the property about fork from chapter 7, that fork(x) == x
+    val forkProp = forAllPar(pIntComplex) {
+      x => Par.equal(Par.fork(x), x)
+    }
+
+    val isEven = (i: Int) => i % 2 == 0
+
+    val takeWhileProp = forAll(Gen.listOf(choose(0, 10))) {
+      l => l.takeWhile(isEven).forall(isEven)
+    }
+    // Exercise 8.18
+    // Come up with properties that takeWhile should satisfy
+    // Think of a property expressing the relationship between takeWhile and dropWhile
+    val takeWhileDropProp = forAll(Gen.listOf(choose(0, 10))) {
+      l => (l.takeWhile(isEven) ++ l.dropWhile(isEven)) == l
+    }
+
+    // Generating constant functions
+    def genStringIntFn(g: Gen[Int]): Gen[String => Int] =
+      g map (i => (s => i))
+
+
+
     // Generate an infinite stream using an initial seed state (RNG)
     def randomStream[A](a: Gen[A])(rng: RNG): Stream[A] =
       Stream.unfold(rng)(s => Some(a.sample.run(s)))
@@ -165,6 +227,8 @@ object PropertyTesting {
           println(s"! Falsified after $n passed tests:\n $msg")
         case Passed =>
           println(s"+ OK, passed $testCases tests.")
+        case Proved =>
+          println(s"+ OK, proved property")
       }
   }
 }
