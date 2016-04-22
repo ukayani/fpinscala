@@ -230,5 +230,5 @@ object JSONParser {
     case class JArray(get: IndexedSeq[JSON]) extends JSON
     case class JObject(get: Map[String, JSON]) extends JSON
   }
-  
+
 }
