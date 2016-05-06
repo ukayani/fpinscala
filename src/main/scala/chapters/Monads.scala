@@ -1,7 +1,6 @@
 package chapters
 
 import chapters.Applicatives.Applicative
-import chapters.Monads.{Id, Reader}
 
 /**
   * Created on 2016-04-16.
@@ -139,14 +138,14 @@ object Monads {
 
       def unit[A](a: => A): Option[A] = Some(a)
 
-      def flatMap[A, B](ma: Option[A])(f: (A) => Option[B]): Option[B] =
+      override def flatMap[A, B](ma: Option[A])(f: (A) => Option[B]): Option[B] =
         ma.flatMap(f)
     }
 
     object ListMonad extends Monad[List] {
       def unit[A](a: => A): List[A] = List(a)
 
-      def flatMap[A, B](ma: List[A])(f: (A) => List[B]): List[B] = ma flatMap f
+      override def flatMap[A, B](ma: List[A])(f: (A) => List[B]): List[B] = ma flatMap f
     }
 
     // Exercise 11.2
