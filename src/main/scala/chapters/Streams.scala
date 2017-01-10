@@ -4,14 +4,14 @@ package chapters
   * Created on 2016-03-30.
   */
 
-sealed trait Stream[+A] {
+sealed trait FStream[+A] {
 
-  import Stream._
+  import FStream._
 
   // Exercise 5.1
   def toList: List[A] = {
     @annotation.tailrec
-    def go(acc: List[A], l: Stream[A]): List[A] =
+    def go(acc: List[A], l: FStream[A]): List[A] =
       l match {
         case Empty => acc.reverse
         case Cons(h, t) => go(h() :: acc, t())
@@ -20,18 +20,18 @@ sealed trait Stream[+A] {
   }
 
   // Exercise 5.2
-  def take(n: Int): Stream[A] = this match {
+  def take(n: Int): FStream[A] = this match {
     case Cons(h, t) if n > 0 => cons(h(), t().take(n - 1))
     case _ => empty
   }
 
-  def drop(n: Int): Stream[A] = this match {
+  def drop(n: Int): FStream[A] = this match {
     case Cons(h, t) if n > 0 => t().drop(n - 1)
     case _ => this
   }
 
   // Exercise 5.3
-  def takeWhile2(p: A => Boolean): Stream[A] = this match {
+  def takeWhile2(p: A => Boolean): FStream[A] = this match {
     case Cons(h, t) if p(h()) => cons(h(), t().takeWhile2(p))
     case _ => empty
   }
@@ -56,7 +56,7 @@ sealed trait Stream[+A] {
     }
 
   // Exercise 5.5
-  def takeWhile(p: A => Boolean): Stream[A] =
+  def takeWhile(p: A => Boolean): FStream[A] =
     foldRight(empty[A]) { (a, b) =>
       if (p(a)) cons(a, b) else empty
     }
@@ -67,12 +67,12 @@ sealed trait Stream[+A] {
       (a, _) => Some(a)
     }
 
-  def map[B](f: A => B): Stream[B] =
+  def map[B](f: A => B): FStream[B] =
     foldRight(empty[B]) {
       (a, b) => cons(f(a), b)
     }
 
-  def filter(p: A => Boolean): Stream[A] =
+  def filter(p: A => Boolean): FStream[A] =
     foldRight(empty[A]) {
       (a, b) => if (p(a)) cons(a, b) else b
     }
@@ -80,42 +80,42 @@ sealed trait Stream[+A] {
   def find(p: A => Boolean): Option[A] =
     filter(p).headOption
 
-  def append[B >: A](l: => Stream[B]): Stream[B] =
+  def append[B >: A](l: => FStream[B]): FStream[B] =
     foldRight(l) {
       (a, b) => cons(a, b)
     }
 
-  def flatMap[B](f: A => Stream[B]): Stream[B] =
+  def flatMap[B](f: A => FStream[B]): FStream[B] =
     foldRight(empty[B]) {
       (a, b) => f(a) append b
     }
 
   // Exercise 5.13
-  def map2[B](f: A => B): Stream[B] =
+  def map2[B](f: A => B): FStream[B] =
     unfold(this) {
       case Cons(h, t) => Some(f(h()), t())
       case _ => None
     }
 
-  def take2(n: Int): Stream[A] =
+  def take2(n: Int): FStream[A] =
     unfold((this, n)) {
       case (Cons(h, t), i) if i > 0 => Some(h(), (t(), i - 1))
       case _ => None
     }
 
-  def takeWhile3(p: A => Boolean): Stream[A] =
+  def takeWhile3(p: A => Boolean): FStream[A] =
     unfold(this) {
       case Cons(h, t) if p(h()) => Some(h(), t())
       case _ => None
     }
 
-  def zipWith[B, C](l: Stream[B])(f: (A, B) => C): Stream[C] =
+  def zipWith[B, C](l: FStream[B])(f: (A, B) => C): FStream[C] =
     unfold((this, l)) {
       case (Cons(h, t), Cons(bh, bt)) => Some(f(h(), bh()), (t(), bt()))
       case _ => None
     }
 
-  def zipAll[B](l: Stream[B]): Stream[(Option[A], Option[B])] =
+  def zipAll[B](l: FStream[B]): FStream[(Option[A], Option[B])] =
     unfold((this, l)) {
       case (Cons(h, t), Cons(bh, bt)) => Some((Some(h()), Some(bh())), (t(), bt()))
       case (Cons(h, t), _) => Some((Some(h()), None), (t(), empty[B]))
@@ -123,11 +123,11 @@ sealed trait Stream[+A] {
       case _ => None
     }
 
-  def zip[B](l: Stream[B]): Stream[(A, B)] =
+  def zip[B](l: FStream[B]): FStream[(A, B)] =
     zipWith(l)((a,b) => (a, b))
 
   // Exercise 5.14
-  def startsWith[B](s: Stream[B]): Boolean =
+  def startsWith[B](s: FStream[B]): Boolean =
     zipAll(s).foldRight(true) {
       (a, b) => a match {
         case (Some(a1), Some(a2)) if a1 == a2 => b
@@ -136,26 +136,26 @@ sealed trait Stream[+A] {
       }
     }
 
-  def startsWith2[B](s: Stream[B]): Boolean =
+  def startsWith2[B](s: FStream[B]): Boolean =
     zipAll(s).takeWhile(_._2.isEmpty).forall({
       case (a1, b1) => a1 == b1
     })
 
   // Exercise 5.15
-  def tails: Stream[Stream[A]] =
+  def tails: FStream[FStream[A]] =
     unfold(this) {
       case Cons(h, t) if t() == Empty => Some(empty[A], t())
       case l@Cons(h, t) => Some(l, t())
       case _ => None
     }
 
-  def hasSubsequence[A](s: Stream[A]): Boolean =
+  def hasSubsequence[A](s: FStream[A]): Boolean =
     tails exists (_ startsWith s)
 
   // Exercise 5.16
   // Implement a function like fold which returns intermediate results
   // as a stream
-  def scanRight[B](z: B)(f: (A, => B) => B): Stream[B] =
+  def scanRight[B](z: B)(f: (A, => B) => B): FStream[B] =
   // The zero case would be a stream with the zero element
     foldRight(cons(z, empty[B])) {
       // note: we can safely call b.headOption.get since b can never be empty
@@ -166,34 +166,34 @@ sealed trait Stream[+A] {
     }
 }
 
-case object Empty extends Stream[Nothing]
+case object Empty extends FStream[Nothing]
 
-case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
+case class Cons[+A](h: () => A, t: () => FStream[A]) extends FStream[A]
 
-object Stream {
-  def cons[A](hd: => A, tl: => Stream[A]): Stream[A] = {
+object FStream {
+  def cons[A](hd: => A, tl: => FStream[A]): FStream[A] = {
     lazy val head = hd
     lazy val tail = tl
     Cons(() => head, () => tail)
   }
 
-  def empty[A]: Stream[A] = Empty
+  def empty[A]: FStream[A] = Empty
 
-  def apply[A](as: A*): Stream[A] =
+  def apply[A](as: A*): FStream[A] =
     if (as.isEmpty) empty else cons(as.head, apply(as.tail: _*))
 
   // Exercise 5.8
-  def constant[A](a: A): Stream[A] = {
-    lazy val gen: Stream[A] = cons(a, gen)
+  def constant[A](a: A): FStream[A] = {
+    lazy val gen: FStream[A] = cons(a, gen)
     gen
   }
 
   // Exercise 5.9
-  def from(n: Int): Stream[Int] = cons(n, from(n + 1))
+  def from(n: Int): FStream[Int] = cons(n, from(n + 1))
 
   // Exercise 5.10
-  def fib: Stream[Int] = {
-    def go(first: Int, second: Int): Stream[Int] = {
+  def fib: FStream[Int] = {
+    def go(first: Int, second: Int): FStream[Int] = {
       cons(first, go(second, first + second))
     }
     go(0, 1)
@@ -204,24 +204,24 @@ object Stream {
   // unfold. It takes an initial state and a function for
   // producing both the next state and the next value generated
   // in the stream
-  def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = {
+  def unfold[A, S](z: S)(f: S => Option[(A, S)]): FStream[A] = {
     f(z).map {
       case (a, s) => cons(a, unfold(s)(f))
     }.getOrElse(empty[A])
   }
 
   // Exercise 5.12
-  def constant2[A](a: A): Stream[A] =
+  def constant2[A](a: A): FStream[A] =
     unfold(a) {
       s => Some(s, s)
     }
 
-  def from2(n: Int): Stream[Int] =
+  def from2(n: Int): FStream[Int] =
     unfold(n) {
       s => Some(s, s + 1)
     }
 
-  def fib2: Stream[Int] =
+  def fib2: FStream[Int] =
     unfold((0, 1)) {
       case (a, b) => Some(a, (b, a + b))
     }

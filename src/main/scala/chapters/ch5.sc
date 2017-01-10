@@ -217,23 +217,23 @@ object Streams {
   }
 }
 import Streams._
-chapters.Stream(1,2,3,4,5).drop(2).toList
-chapters.Stream(2,4,2,6).forall(_ % 2 == 0)
-chapters.Stream(1,2).headOption
-chapters.Stream(1,2,3,4).map(_ + 1).take(2).toList
-chapters.Stream(1,2,3,4).filter(_ % 2 == 0)
+chapters.FStream(1,2,3,4,5).drop(2).toList
+chapters.FStream(2,4,2,6).forall(_ % 2 == 0)
+chapters.FStream(1,2).headOption
+chapters.FStream(1,2,3,4).map(_ + 1).take(2).toList
+chapters.FStream(1,2,3,4).filter(_ % 2 == 0)
 
-val ones: chapters.Stream[Int] = chapters.Stream.cons(1, ones)
+val ones: chapters.FStream[Int] = chapters.FStream.cons(1, ones)
 ones.take(10).toList
-chapters.Stream.constant(1).take(10).toList
-chapters.Stream.fib.take(10).toList
-chapters.Stream.constant2(2).take(4).toList
-chapters.Stream.from(2).take(3).toList
-chapters.Stream.fib2.take(10).toList
-chapters.Stream(1,2,3,4).map2(_ + 2).take2(2).toList
-chapters.Stream(1,2,3).zipWith(chapters.Stream(2,3))(_ + _).toList
-chapters.Stream(1,2,3).zipAll(chapters.Stream(2, 3)).toList
-chapters.Stream(1,2,3,4).startsWith2(chapters.Stream(1,2))
-chapters.Stream(1,2,3,4).tails.map(_.toList).toList
-chapters.Stream(1,2,3,4,5).hasSubsequence(chapters.Stream(3,4))
-chapters.Stream(1,2,3).scanRight(0)(_ + _).toList
+chapters.FStream.constant(1).take(10).toList
+chapters.FStream.fib.take(10).toList
+chapters.FStream.constant2(2).take(4).toList
+chapters.FStream.from(2).take(3).toList
+chapters.FStream.fib2.take(10).toList
+chapters.FStream(1,2,3,4).map2(_ + 2).take2(2).toList
+chapters.FStream(1,2,3).zipWith(chapters.FStream(2,3))(_ + _).toList
+chapters.FStream(1,2,3).zipAll(chapters.FStream(2, 3)).toList
+chapters.FStream(1,2,3,4).startsWith2(chapters.FStream(1,2))
+chapters.FStream(1,2,3,4).tails.map(_.toList).toList
+chapters.FStream(1,2,3,4,5).hasSubsequence(chapters.FStream(3,4))
+chapters.FStream(1,2,3).scanRight(0)(_ + _).toList

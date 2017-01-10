@@ -139,8 +139,8 @@ object PropertyTesting {
     def forAll[A](g: Int => Gen[A])(f: A => Boolean): Prop = Prop {
       (max,n,rng) =>
         val casesPerSize = (n - 1) / max + 1
-        val props: Stream[Prop] =
-          Stream.from(0).take((n min max) + 1).map(i => forAll(g(i))(f))
+        val props: FStream[Prop] =
+          FStream.from(0).take((n min max) + 1).map(i => forAll(g(i))(f))
         val prop: Prop =
           props.map(p => Prop { (max, n, rng) =>
             p.run(max, casesPerSize, rng)
@@ -152,7 +152,7 @@ object PropertyTesting {
       // Generate a stream using the generator
       // Zip the stream with an index so we can determine how many cases already
       // end the stream at n elements and run the predicate on each (ie. the test)
-      (n, rng) => randomStream(g)(rng).zip(Stream.from(0)).take(n).map {
+      (n, rng) => randomStream(g)(rng).zip(FStream.from(0)).take(n).map {
         case (a, i) => try {
           if (f(a)) Passed else Falsified(a.toString, i)
         } catch {
@@ -206,8 +206,8 @@ object PropertyTesting {
 
 
     // Generate an infinite stream using an initial seed state (RNG)
-    def randomStream[A](a: Gen[A])(rng: RNG): Stream[A] =
-      Stream.unfold(rng)(s => Some(a.sample.run(s)))
+    def randomStream[A](a: Gen[A])(rng: RNG): FStream[A] =
+      FStream.unfold(rng)(s => Some(a.sample.run(s)))
 
     def buildMsg[A](s: A, e: Exception): String =
       s"test case: $s]n" +
